@@ -1,0 +1,141 @@
+DynaCBF-Planner
+Copyright 2026 DynaCBF-Planner contributors
+
+本文件记录 DynaCBF-Planner 的来源、改动与第三方依赖，供许可证合规与学术署名使用。
+
+================================================================================
+1. 上游来源
+================================================================================
+
+本项目是 SCAN-Planner 的衍生工作（derivative work）。
+
+原始项目：
+  SCAN-Planner: Spatial Collision-Aware Local Planning for Route-Guided
+  Long-Range Quadruped Navigation
+  https://github.com/wuyi2121/SCAN-Planner
+  原始研究作者：Han Zheng, Zhe Chen, Yiwen Fu, Ming Yang, Tong Qin
+  许可证：Apache License 2.0
+
+本项目所依据的直接上游（ROS 2 移植版）：
+  SCAN-Planner ROS 2
+  https://github.com/xiaoqi371317/SCAN-Planner
+  Copyright 2026 xiaoqi371317
+  该移植版同样是 Apache License 2.0。
+  本项目不修改该仓库，运行时也不依赖它的任何构建产物，二者相互独立。
+
+本项目新写的部分为跨包编排（dynacbf_bringup）与融合缝（bspline_path_sampler）；
+动态障碍物感知/跟踪链路、仿真的场景与节点、以及非线性 MPC-D-CBF 控制器代码来自
+另一套 ROS 2 实现，逐文件对应关系见第 3.2 节。
+上游作者与本项目维护者无隶属关系，也不必然认可本项目。
+
+================================================================================
+2. 迁移自上游的代码（Apache-2.0，保留原有版权声明）
+================================================================================
+
+以下模块的源码迁移自上述 SCAN-Planner ROS 2 移植版的 src/planner/，
+在新项目中统一收敛到单个 ROS 2 包 dynacbf_planner：
+
+  上游包                     -> 本项目位置
+  plan_env                   -> dynacbf_planner/{include,src}/plan_env/
+                                （grid_map、raycast：滑动占据栅格与射线更新）
+  path_searching             -> dynacbf_planner/{include,src}/path_searching/
+                                （dyn_a_star：A* 绕障引导）
+  bspline_opt                -> dynacbf_planner/{include,src}/bspline_opt/
+                                （uniform_bspline、bspline_optimizer、lbfgs.hpp）
+  traj_utils                 -> dynacbf_planner/{include,src}/traj_utils/
+                                （polynomial_traj、planning_visualization）
+  plan_manage (scan_planner) -> dynacbf_planner/{include,src}/planner/
+                                （dynacbf_planner_node、scan_replan_fsm 移植版、
+                                  planner_manager、plan_container）
+  scan_planner_msgs          -> dynacbf_msgs
+                                （msg/Bspline.msg、msg/DataDisp.msg 字段保持一致）
+
+迁移时所做的改动：
+  * 包名/命名空间/头文件路径重命名（scan_planner -> dynacbf），避免与系统中的
+    scan_planner 包冲突；按"命名清晰"原则把上游的多个包合并为单包内的子目录。
+  * 消息依赖由 scan_planner_msgs 改为 dynacbf_msgs。
+  * 修复上游 CMake 导出问题：plan_env 的 target_include_directories 未使用
+    $<BUILD_INTERFACE:>，会把构建机绝对路径写入导出信息。
+  * FSM 新增受限频率的重规划请求订阅（planning/replan_request）。
+  * 修复上游两个 launch test 未继承 unittest.TestCase 导致的"空跑假绿"。
+  * 网格地图参数增加有限性与范围校验（上游缺键时静默使用哨兵值 -1，会算出错误几何）。
+  * 未编译迁移过来的 gradient_descent_optimizer（上游死类），源文件已删除。
+
+================================================================================
+3. 本项目新写与改写的内容（Apache-2.0）
+================================================================================
+
+3.1 本项目完全新写
+
+  dynacbf_bringup     跨包编排 launch（本包不携带参数与 RViz 配置：参数归各节点所属
+                      的包，RViz 配置沿用 dynacbf_simulator/rviz/rviz_config.rviz）
+  dynacbf_dcbf        bspline_path_sampler.py：把带时间的 B 样条按弧长采样成
+                      nav_msgs/Path，作为 D-CBF 控制器的几何参考路径（融合缝），
+                      以及 config/dcbf_params.yaml 末尾新增的融合缝参数段
+  dynacbf_msgs        DynamicObstacle(Array) / PredictedObstacle(Array) /
+                      DetectedEllipse / DetectionArray 消息定义
+
+3.2 复制或改写自另一套 ROS 2 实现
+
+  该实现的 local_map / obs_param / local_planner / scene 四个包的 package.xml 均声明
+  Apache-2.0，其中 obs_param 附带完整许可证文本（合并在本项目的
+  dynacbf_tracking/LICENSE）。以下文件的算法、话题名、消息类型、参数名与类名一律
+  未改，文件头部均保留了来源与改动说明；行数为逐文件实测对照结果。
+
+  dynacbf_tracking    src/obs_kf.cpp              逐字复制（383 行，无改动）
+                      src/kalman.cpp              逐字复制（47 行，无改动）
+                      include/kalman.h            逐字复制（62 行，无改动）
+  dynacbf_simulator   src/move_test.cpp           逐字复制（140 行，无改动）
+                      include/moving_cylinder.hpp 逐字复制（51 行，无改动）
+                      worlds/{world,world0,world1}.world  逐字复制（无改动）
+                      src/pseudo_odom.cpp         复制后修改（114 → 140 行）
+                      config/config.yaml          复制后调整（差 19 行）
+                      rviz/rviz_config.rviz       复制后调整（差 2 行）
+                      launch/start.launch.py、launch/move_test.launch.py  复制后调整
+  dynacbf_perception  src/local_map.cpp           复制后修改（563 → 626 行）
+                      include/DBSCAN.hpp          逐字复制（98 行，无改动）
+                      include/KM.hpp              逐字复制（164 行，无改动）
+                      include/ellipse.hpp         复制后修改（293 → 305 行）
+                      include/third_party/Hungarian.hpp  逐字复制（453 行，BSD，见第 5 节）
+  dynacbf_dcbf        local_planner.py / controller.py / barrier.py
+                                                  逐字复制，仅新增文件头来源注释
+                      config/dcbf_params.yaml     复制后追加融合缝参数段（见 3.1）
+
+================================================================================
+4. 明确未迁移的上游内容及原因
+================================================================================
+
+  local_sensing（local_sensing_node）  许可证为 GPL-3.0-only。GPL 与本项目的
+                                       Apache-2.0 不兼容，合并会造成许可证传染，
+                                       因此**未迁移任何代码**。
+  mockamap                             许可证为 GPL-3.0-only，同上，**未迁移**。
+  pose_utils、waypoint_generator        上游死代码（无有效订阅者/唯一包含者为自身）。
+  odom_visualization                    仅调试可视化，且其被当作资源锚点引用的
+                                        meshes/yunque001.pcd 从未提交。
+  OpenGL/GLFW 渲染路径                  需要显示环境与 OpenGL 4.6，本项目改用自写的
+                                        确定性射线投射点云模型（见 dynacbf_simulator）。
+  ikd-Tree、filesystem.h 等             上游未被实例化或无法编译的辅助文件。
+
+本项目未复制任何 GPL 代码；dynacbf_simulator 的场景与仿真节点来自声明 Apache-2.0 的
+另一套 ROS 2 实现，逐文件对应关系见第 3.2 节。
+
+================================================================================
+5. 第三方依赖
+================================================================================
+
+  ROS 2 Humble            Apache-2.0
+  Eigen 3                 MPL-2.0
+  CasADi 3.8.0            LGPL-3.0-or-later
+      - 作为**外部依赖**通过用户级 pip 安装使用（python3 -m pip install --user casadi），
+        本项目不复制、不修改、也不再分发其源码；构建时链接其 libcasadi.so。
+      - 许可证文本：GNU Lesser General Public License v3 or later。
+  IPOPT                   EPL-1.0
+      - 随 CasADi 的 wheel 以插件形式提供（libcasadi_nlpsol_ipopt.so），同样为外部依赖，
+        本项目不再分发。
+  PCL、OpenCV、Boost       BSD 类许可证（经由上游 plan_env 的依赖链使用）
+  Hungarian.hpp           BSD 许可证
+      - dynacbf_perception/include/third_party/Hungarian.hpp，C++ 封装作者 Cong Ma (2016)，
+        原始算法作者 Markus Buehren；文件头保留了原始版权与许可声明，本项目未修改该文件。
+
+若需要以二进制形式再分发本项目，请注意第 5 节中 LGPL/EPL 依赖的合规要求
+（保留许可证声明、提供替换该动态库的能力）。

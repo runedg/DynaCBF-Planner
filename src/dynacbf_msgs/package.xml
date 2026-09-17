@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dynacbf_msgs</name>
+  <version>0.1.0</version>
+  <description>DynaCBF-Planner 消息定义：动态障碍物与预测障碍物、椭圆检测结果、B 样条轨迹与规划器数据展示。</description>
+  <maintainer email="dynacbf@example.com">DynaCBF-Planner maintainers</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>builtin_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

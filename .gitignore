@@ -1,0 +1,22 @@
+# colcon 构建产物
+/build/
+/install/
+/log/
+
+# Python 缓存与打包产物
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ROS 运行期产物
+*.bag
+*.db3
+.rviz_log

@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dynacbf_planner</name>
+  <version>0.1.0</version>
+  <description>
+    DynaCBF 规划链路单包实现：栅格地图与光线投射、动力学 A* 路径搜索、B 样条轨迹优化、
+    轨迹可视化与重规划状态机（由 SCAN-Planner 的规划链路迁移而来），内部按子目录划分模块。
+    仅包含规划，不含控制器与仿真器。
+  </description>
+  <maintainer email="dynacbf@example.com">DynaCBF-Planner maintainers</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>ament_index_cpp</depend>
+  <depend>cv_bridge</depend>
+  <depend>dynacbf_msgs</depend>
+  <!-- Eigen3：rosdep key 为 eigen（沿用上游声明方式），CMake 侧用 find_package(Eigen3) -->
+  <depend>eigen</depend>
+  <depend>geometry_msgs</depend>
+  <depend>message_filters</depend>
+  <depend>nav_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
+
+  <!-- rclpy 仅由后续脚本/测试使用，C++ 节点不链接，故为 exec_depend -->
+  <exec_depend>rclpy</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>launch_testing_ament_cmake</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

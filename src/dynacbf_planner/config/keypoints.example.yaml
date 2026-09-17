@@ -1,0 +1,9 @@
+# 迁移来源：SCAN-Planner 上游的 keypoints.example.yaml
+# 预设航点（关键点）参数示例：与 planner.yaml 一起加载后覆盖其中的 fsm.* 参数
+# 移植差异：顶层节点名键改为 dynacbf_planner_node（ROS 2 按节点名匹配参数）
+dynacbf_planner_node:
+  ros__parameters:
+    # 导航模式：2 = 按预设航点序列导航
+    fsm.navi_mode: 2
+    # 航点序列（扁平数组）：每三个数值为一个航点 (x, y, z)，单位为米，位于 world 坐标系
+    fsm.waypoints: [0.0, 0.0, 0.3, 2.0, 0.0, 0.3]

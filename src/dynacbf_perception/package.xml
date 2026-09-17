@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dynacbf_perception</name>
+  <version>0.1.0</version>
+  <description>
+    DynaCBF-Planner 感知层：点云背景/地面过滤、DBSCAN 聚类与最小包围椭圆（MBE）拟合，
+    输出障碍椭圆供跟踪层关联，并发布滤除地面回波后的点云供规划层的栅格地图使用。
+  </description>
+  <maintainer email="dynacbf@example.com">DynaCBF-Planner maintainers</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rviz_visual_tools</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

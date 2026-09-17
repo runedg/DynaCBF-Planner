@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dynacbf_dcbf</name>
+  <version>0.1.0</version>
+  <description>
+    MPC-D-CBF 局部规划层（Python/ament_python）。
+
+    节点：
+      * local_planner_node  —— MPC-D-CBF 本体（CasADi Opti + IPOPT，unicycle 模型，
+        椭圆 D-CBF 约束）。逐字复制自已验证跑通的参考实现，逻辑零改动，
+        话题名/消息类型/参数名/类名/节点名均未改。
+      * controller_node     —— local_plan + cmd_move → cmd_vel 转发，并用 TF
+        ('world' → 'base_link') 发布 curr_state。同样逐字复制。
+      * bspline_path_sampler —— 本项目新写的唯一对接逻辑（融合缝）：把
+        planning/bspline 的名义 B 样条按弧长几何采样成 nav_msgs/Path 发布到
+        global_path，供 local_planner_node 直接消费，无需任何 remap。
+
+    额外运行时依赖（非 rosdep 键，需用户级安装）：
+      python3 -m pip install --user casadi    # 提供 casadi + IPOPT 插件
+    本包不依赖任何外部仓库的源码目录、包或 install/ 目录。
+  </description>
+  <maintainer email="dynacbf@example.com">DynaCBF-Planner maintainers</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>dynacbf_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>tf2_ros_py</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

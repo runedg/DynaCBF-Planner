@@ -1,0 +1,98 @@
+# =============================================================================
+# dcbf_params.yaml
+# =============================================================================
+# 【来源】本文件的 `/**` 段落是参考实现（另一套已在本机验证跑通的 ROS 2 复现）
+#         local_planner/config/config.yaml 的**逐字复制**：键名、取值、注释一字未改。
+#         末尾用注释块分隔出"我们新增的融合缝参数"。
+#
+# 【顶层键用 /** 的原因】参考实现本来就用 `/**`（对所有节点生效）。本 launch 里三个
+#   节点共用这一个文件：local_planner_node / controller_node / bspline_path_sampler。
+#   ROS 2 对参数文件中"节点未声明"的键是忽略（不报错），所以：
+#     * 参考实现的算法参数只有 local_planner_node 会真正读到；
+#     * 末尾的融合缝参数只有 bspline_path_sampler 会读到。
+#
+# 【三条必须满足的对接前提（供审阅/排障）】
+#   1) kalman_N 必须等于 MPC_N（local_planner.py 的 __load_parameter 里有硬校验，
+#      不等就直接抛异常）。更关键的是 obs_predict_pub 的**发布方**必须满足布局契约：
+#        * 整条 Float32MultiArray 的长度必须能被 5 整除（每步 5 个数
+#          [cx, cy, a, b, phi]）；
+#        * 按"障碍物优先"排布：第 j 条障碍物的第 i 步在下标 j*kalman_N + i，
+#          即**每条障碍物必须恰好提供 kalman_N 步**；
+#        * 步与步的时间间隔必须等于 MPC_step_size (0.25 s)，否则 D-CBF 约束会
+#          作用在错误时刻的障碍物位置上。
+#      【风险提示】逐字复制的 local_planner.py 里只有 `len(data) % 5 == 0` 这一道
+#      检查，之后直接用 `num_obs = int(len(obstacles) / kalman_N)` 切分。若发布方
+#      每条障碍物只给 16 步（例如 tracking.yaml 的 prediction_horizon=15、dt=0.1），
+#      则 num_obs = int(n*16/25)：n=1 时为 0 —— **等于完全没有 CBF 约束**（静默失效），
+#      n=2 及更多时会把相邻障碍物的步错位当成同一条障碍物的预测。
+#      因此必须让预测发布方的 (每条步数, dt) 与 (kalman_N, MPC_step_size) 对齐。
+#   2) global_path 由 bspline_path_sampler 提供：它把 planning/bspline 的 B 样条按
+#      **弧长**几何采样后发布到同名话题（详见该文件顶部注释）。
+#   3) controller_node 需要 TF 'world' → 'base_link' 才能发布 curr_state；
+#      没有这条 TF 时它静默跳过，local_planner_node 收不到 curr_state 就完全不动作。
+# =============================================================================
+
+/**:
+  ros__parameters:
+    replan_period: 0.1
+    v_max: 0.5
+    # Zero is required for a safety-critical controller to stop when no
+    # forward motion satisfies the D-CBF constraints.
+    v_min: 0.0
+    omega_max: 0.3
+
+    MPC_N: 25
+    MPC_step_size: 0.25
+
+    # Clearance from the predicted ellipse boundary, not from its center.
+    # 0.30 m covers the Burger footprint and a conservative tracking margin.
+    safe_dist: 0.3
+    gamma_k: 0.3
+    goal_tolerance: 0.1
+
+    kalman_N: 25
+
+    MPC_constraint: "CBF"  #    None Euclidean CBF
+
+    init_N: 2
+
+    init_v_0: 0.01
+    init_omega_0: 0.3
+
+    init_v_1: 0.01
+    init_omega_1: -0.3
+
+    # -------------------------------------------------------------------------
+    # 以下为**我们新增**的融合缝参数（bspline_path_sampler），
+    # 不属于参考实现的 config.yaml；上面的键与取值一字未改。
+    # -------------------------------------------------------------------------
+
+    # 输入：规划层发布的名义 B 样条话题（dynacbf_msgs/Bspline）
+    bspline_topic: planning/bspline
+
+    # 输出：参考实现 local_planner.py 订阅的参考路径话题。用同名 global_path，
+    # 因此三个节点之间**不需要任何 remap**。
+    out_topic: global_path
+
+    # B 样条与输出 Path 的坐标系。参考实现把 local_path 的 frame_id 硬编码为
+    # "world"，controller.py 也是查 'world'→'base_link' 的 TF，故默认 world。
+    frame_id: world
+
+    # 每次采样输出的路点数。必须 >= MPC_N（25），否则 MPC 的参考窗被截短。
+    path_points: 120
+
+    # 弧长步长 [m]。**标定要点**：参考实现发布参考路径的
+    # global_path_publisher.cpp 用的间距是 0.1 m，而 MPC_step_size = 0.25 s，
+    # 即参考实现的"隐含参考速度"约 0.4 m/s（v_max = 0.5）。
+    # 若取 0.05 m，参考窗每步只前进 0.05 m，而机器人 0.25 s 内能走 0.125 m，
+    # 跟踪代价会把车速拖到约 0.2 m/s（比参考实现慢一倍）。
+    # 要复现参考实现的速度表现，请把本值改为 0.1。
+    arc_step: 0.1
+
+    # 位姿来源：取"机器人在曲线上的最近点"作为当前进度 s_now 必须知道机器人在哪。
+    # 用 body_pose（nav_msgs/Odometry，SensorDataQoS），与 tracking/controller 同源。
+    odom_topic: body_pose
+
+    # 是否在 body_pose 更新、且进度前进 >= arc_step 时刷新采样窗。
+    # 开启后，即使规划层长时间不重规划，参考窗也会跟着机器人前进（不会"用光"）。
+    resample_on_odom: true

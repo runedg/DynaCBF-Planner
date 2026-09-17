@@ -1,0 +1,44 @@
+/**:
+  ros__parameters:
+    # lidar_topic: "/livox/lidar"
+    lidar_topic: "velodyne_points"
+
+    base_link: "base_scan"
+    base_scan: "base_scan"
+
+    localmap_x_size: 10.0
+    localmap_y_size: 10.0
+    max_heigh: 1.0
+
+    resolution: 0.1
+    # 【本项目调整】梯度判定门限由 0.4 降到 0.25。
+    # 背景：椭圆拟合（get_min_area_ellipse）对"部分可见的圆形截面"会产出细长椭圆，
+    # 主轴方向对噪声极敏感 —— 实测同一障碍的 theta 在 4.71 / -0.10 之间乱跳、
+    # 半轴 a 从 0.2 膨胀到 0.44，喂给 obs_kf 做 25 步外推后就是"碰撞椭圆乱飘"，
+    # 进而让 D-CBF 约束作用在错误位置、影响机器人运动。
+    # 降低门限可让更多点通过梯度判定并参与拟合，使拟合结果更稳定。
+    obs_height: 0.25
+    step_height: 0.5
+
+    # 【本项目新增】local_pcd 的 z 下限，用于滤除地面回波。
+    # VLP-16 是 360° 3D 雷达，地面点极多；不滤除会被下游 GridMap 的 raycastProcess
+    # 无条件标为 hit（occupied），叠加 obstacles_inflation_z_down=0.4 后连机体碰撞
+    # 高度也被覆盖成障碍，导致 A* 永远搜不到路。详见 local_map.cpp 的同名注释。
+    # 注意此值必须低于雷达安装高度（实测 0.172 m），否则障碍物点会被一起滤掉。
+    min_pass_z: 0.1
+    DBSCAN_R: 5.0
+    DBSCAN_N: 5
+
+    # localmap_x_size: 10.0
+    # localmap_y_size: 10.0
+    # max_heigh: 1.0
+
+    # resolution: 0.05  
+    # obs_height: 0.4
+    # step_height: 0.8
+    # DBSCAN_R: 10.0
+    # DBSCAN_N: 5
+
+    block_size: 5
+    block_num: 5
+

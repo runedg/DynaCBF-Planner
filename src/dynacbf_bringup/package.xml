@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dynacbf_bringup</name>
+  <version>0.1.0</version>
+  <description>
+    DynaCBF-Planner 的 bring-up 包：只包含跨包编排 launch，不含 C++ 代码、参数文件
+    与 RViz 配置（参数归各节点所属的包，RViz 配置沿用 dynacbf_simulator/rviz/）。
+    负责把 Gazebo 场地、感知、跟踪、规划器（栅格 → A* → B 样条）与 MPC-D-CBF
+    控制器编排成一条可独立启动的链路。
+  </description>
+  <maintainer email="dynacbf@example.com">DynaCBF-Planner maintainers</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- launch 文件本身依赖 -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+
+  <!-- 被本包 launch 编排的节点所在包。上述每个包的可执行文件都已构建并在闭环中启动过。 -->
+  <exec_depend>dynacbf_perception</exec_depend>
+  <exec_depend>dynacbf_tracking</exec_depend>
+  <exec_depend>dynacbf_planner</exec_depend>
+  <exec_depend>dynacbf_dcbf</exec_depend>
+  <exec_depend>dynacbf_simulator</exec_depend>
+
+  <!-- 消息包：RViz 显示插件在运行期需要能加载这些类型的自描述消息 -->
+  <exec_depend>dynacbf_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+
+  <!-- 可视化与坐标系 -->
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

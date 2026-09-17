@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dynacbf_tracking</name>
+  <version>0.1.0</version>
+  <description>
+    DynaCBF-Planner 跟踪层：门限与匈牙利数据关联、常速度 Kalman 滤波、轨迹生命周期管理，
+    以及面向 MPC 预测时域的未来椭圆预测与协方差膨胀。
+  </description>
+  <maintainer email="dynacbf@example.com">DynaCBF-Planner maintainers</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

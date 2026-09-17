@@ -1,0 +1,143 @@
+# 迁移来源：SCAN-Planner 上游的 planner.yaml
+# 话题名、参数名保持与上游一致（便于用同一套 launch 参数对照行为）。
+# 移植差异：
+#   1) 顶层节点名键改为 dynacbf_planner_node（本节点默认名），
+#      ROS 2 按节点名匹配参数，节点名被 launch 覆盖时需同步修改此处键名；
+#   2) 新增 fsm.replan_request_min_interval / fsm.replan_request_hold 两个参数
+#      （外部重规划请求话题 planning/replan_request 的限频与防抖）。
+dynacbf_planner_node:
+  ros__parameters:
+    # ROS 标准参数：是否使用仿真时间（false 表示使用真实时间）
+    use_sim_time: false
+
+    # 导航模式：1 = RViz/话题手动给定目标，2 = 预设航点序列，3 = reference_path
+    fsm.navi_mode: 1
+    # 重规划抑制阈值（米）：当前位置相对当前局部轨迹起点移动不足此距离时，抑制重新规划
+    fsm.thresh_replan: 1.0
+    # 接近目标点停止重规划阈值（米）：与当前目标点的距离小于该值时，不再重规划
+    fsm.thresh_no_replan: 0.1
+    # 规划视界（单次规划覆盖的前向范围）
+    fsm.planning_horizon: 7.5
+    # 紧急情况判定/响应的时间阈值
+    fsm.emergency_time: 1.0
+    # 是否启用故障安全（fail-safe）机制
+    fsm.fail_safe: true
+    # 重规划失败次数的上限
+    fsm.max_replan_fail_count: 1000
+    # 【移植新增】两次被接受的外部重规划请求之间的最小间隔（秒，限频）
+    fsm.replan_request_min_interval: 2.0
+    # 【移植新增】收到重规划请求后请求态的保持时长（秒，防抖）
+    fsm.replan_request_hold: 0.5
+
+    # 栅格地图分辨率（每个栅格对应的尺寸）
+    grid_map.resolution: 0.05
+    # 滑动地图在 x 方向的尺寸
+    grid_map.sliding_map_size_x: 10.0
+    # 滑动地图在 y 方向的尺寸
+    grid_map.sliding_map_size_y: 10.0
+    # 滑动地图在 z 方向的尺寸
+    grid_map.sliding_map_size_z: 5.0
+    # 局部地图更新范围（x 方向）
+    grid_map.local_update_range_x: 5.0
+    # 局部地图更新范围（y 方向）
+    grid_map.local_update_range_y: 5.0
+    # 局部地图更新范围（z 方向）
+    grid_map.local_update_range_z: 2.5
+    # 是否启用地图滑动（滑窗更新）
+    grid_map.map_sliding_en: true
+    # 触发地图滑动的阈值
+    grid_map.map_sliding_thresh: 0.2
+    # 双圆柱近似机身模型：在机器人航向前/后各偏移 grid_map.double_cylinder_offset 处，放置半径为 grid_map.double_cylinder_radius 的圆柱近似机身
+    grid_map.double_cylinder_radius: 0.25
+    # 圆柱相对机器人航向的前/后偏移距离
+    grid_map.double_cylinder_offset: 0.18
+    # 机身高度
+    grid_map.body_height: 0.4
+    # 障碍物沿 z 轴向上的膨胀量
+    grid_map.obstacles_inflation_z_up: 0.1
+    # 障碍物沿 z 轴向下的膨胀量
+    grid_map.obstacles_inflation_z_down: 0.4
+    # 栅格地图所在参考坐标系（frame id）
+    grid_map.frame_id: world
+    # 滑动地图的坐标系（frame id）
+    grid_map.sliding_map_frame_id: sliding_map
+    # 地面高度
+    grid_map.ground_height: 0.0
+    # 传感器类型
+    grid_map.sensor_type: lidar
+    # 输入点云是否已处于世界坐标系
+    grid_map.cloud_is_world: true
+    # 是否需要传感器外参
+    grid_map.need_extrinsic: false
+
+    # 相机内参：主点（光心）x 坐标
+    grid_map.cx: 321.04638671875
+    # 相机内参：主点（光心）y 坐标
+    grid_map.cy: 243.44969177246094
+    # 相机内参：x 方向焦距
+    grid_map.fx: 387.229248046875
+    # 相机内参：y 方向焦距
+    grid_map.fy: 387.229248046875
+    # 深度滤波的最大距离
+    grid_map.depth_filter_maxdist: 3.0
+    # 深度滤波的最小距离
+    grid_map.depth_filter_mindist: 0.3
+    # 深度滤波的边缘余量
+    grid_map.depth_filter_margin: 1
+    # 深度值的缩放因子
+    grid_map.k_depth_scaling_factor: 1000.0
+    # 处理深度图时跳过的像素数（降采样）
+    grid_map.skip_pixel: 2
+
+    # 栅格更新：命中(hit)概率
+    grid_map.p_hit: 0.85
+    # 栅格更新：未命中(miss)概率
+    grid_map.p_miss: 0.30
+    # 栅格概率下限
+    grid_map.p_min: 0.12
+    # 栅格概率上限
+    grid_map.p_max: 0.98
+    # 判定为占用的概率
+    grid_map.p_occ: 0.80
+    # 栅格更新的最大射线长度
+    grid_map.max_ray_length: 5.0
+    # 可视化高度
+    grid_map.vis_height: 0.3
+    # 是否显示占用栅格更新的耗时
+    grid_map.show_occ_time: false
+
+    # 运动管理：最大速度
+    manager.max_vel: 0.75
+    # 运动管理：最大加速度
+    manager.max_acc: 0.8
+    # 运动管理：最大加加速度（jerk）
+    manager.max_jerk: 4.0
+    # 轨迹控制点之间的距离
+    manager.control_points_distance: 0.2
+    # 可行性检查的容差
+    manager.feasibility_tolerance: 0.5
+    # 规划视界（单次规划覆盖的前向范围）
+    manager.planning_horizon: 7.5
+
+    # 轨迹优化：平滑代价权重系数
+    optimization.lambda_smooth: 1.0
+    # 轨迹优化：碰撞代价权重系数
+    optimization.lambda_collision: 1.0
+    # 轨迹优化：可行性代价权重系数
+    optimization.lambda_feasibility: 0.5
+    # 轨迹优化：贴合度代价权重系数
+    optimization.lambda_fitness: 1.0
+    # 轨迹优化：距离基准值参数
+    optimization.dist0: 0.2
+    # 轨迹优化：最大速度
+    optimization.max_vel: 0.75
+    # 轨迹优化：最大加速度
+    # 【移植修正】显式写出这两个容差，不要依赖默认值：
+    # planner_manager 用 (max_acc + acc_tolerance) 作为轨迹可行性硬检查限值，
+    # 而当前 B 样条优化器产出的加速度约为 max_acc 的 2.7~3.2 倍，
+    # 容差过小会导致 final_plan_success 恒为 0（实测 1000 次重规划全部失败）。
+    optimization.vel_tolerance: 0.0
+    optimization.acc_tolerance: 0.0
+    optimization.max_acc: 0.8
+    # 轨迹优化：阶数（order）
+    optimization.order: 3
