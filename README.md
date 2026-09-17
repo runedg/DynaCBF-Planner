@@ -18,7 +18,7 @@
 
 ## 效果演示
 
-RViz 视角下的完整闭环：点目标 → 滑动栅格 + 动力学 A\* + B 样条规划 → MPC-D-CBF 跟踪，
+RViz 视角下的完整闭环：点目标 → 滑动栅格 + 动力学 A\* + B 样条规划 → 控制层跟踪避障，
 途中对动/静态圆柱障碍实时感知、预测与绕行（画面中的椭圆为感知层拟合、跟踪层预测的障碍物）。
 
 <table>
@@ -62,7 +62,7 @@ ros2 launch dynacbf_bringup dynacbf.launch.py
 cd ~/ROBOT/DynaCBF-Planner && source /opt/ros/humble/setup.bash && source install/setup.bash && export TURTLEBOT3_MODEL=burger && ros2 launch dynacbf_bringup dynacbf.launch.py
 ```
 
-第 ③ 步会拉起 13 个进程：Gazebo 服务端、RViz、感知、跟踪、规划、MPC-D-CBF 三个节点、
+第 ③ 步会拉起 13 个进程：Gazebo 服务端、RViz、感知、跟踪、规划、控制层三个节点、
 机器人本体等。**Gazebo 只有服务端（不弹 Gazebo 窗口），RViz 窗口会自动打开。**
 
 启动后约 10–20 秒才就绪：这段时间 Gazebo 在载入场地、生成机器人、启动雷达，
@@ -137,7 +137,7 @@ cd ~/ROBOT/DynaCBF-Planner && source /opt/ros/humble/setup.bash && source instal
 |---|---|---|
 | 最大前进速度 / 转向速度 | `src/dynacbf_dcbf/config/dcbf_params.yaml` | `v_max` / `omega_max` |
 | 避障余量（离椭圆**边界**的净空） | 同上 | `safe_dist` |
-| D-CBF 保守程度 | 同上 | `gamma_k` |
+| 控制障碍函数保守程度 | 同上 | `gamma_k` |
 | 是否启用 CBF 约束 | 同上 | `MPC_constraint`: `CBF` / `Euclidean` / `None` |
 | 预测时域 | 同上 | `MPC_N`、`MPC_step_size`、`kalman_N`（**三者必须同步**，且 `kalman_N` 必须等于 `MPC_N`） |
 | 参考路径点间距（决定隐含参考速度） | 同上 | `arc_step`（`0.1` m 对应约 `0.4` m/s） |
@@ -170,7 +170,7 @@ cd ~/ROBOT/DynaCBF-Planner && source /opt/ros/humble/setup.bash && source instal
 | `dynacbf_perception` | 点云地面过滤 → DBSCAN 聚类 → 最小包围椭圆 | `local_map` |
 | `dynacbf_tracking` | 数据关联 + 常速度 Kalman → 未来 25 步椭圆预测 | `obs_kf` |
 | `dynacbf_planner` | 滑动栅格 → 射线投射 → 动力学 A\* → B 样条优化 → 重规划状态机 | `dynacbf_planner_node` |
-| `dynacbf_dcbf` | 把 B 样条按弧长采样成几何路径；非线性 MPC + 椭圆 D-CBF 求解；发指令 | `bspline_path_sampler`、`local_planner_node`、`controller_node` |
+| `dynacbf_dcbf` | 把 B 样条按弧长采样成几何路径；非线性模型预测控制 + 椭圆控制障碍函数求解；发指令 | `bspline_path_sampler`、`local_planner_node`、`controller_node` |
 | `dynacbf_simulator` | 真值里程计、动态障碍物推动、场地与世界文件 | `pseudo_odom`、`move_test` |
 | `dynacbf_msgs` | 接口定义（8 个 `.msg`） | — |
 | `dynacbf_bringup` | 唯一的启动入口（跨包编排） | `dynacbf.launch.py` |
@@ -210,7 +210,7 @@ Gazebo 场地 → /velodyne_points → local_map → /for_obs_track → obs_kf �
 - 12 个包（7 个自有 + 5 个第三方）干净构建通过，退出码 0。
 - 闭环已实跑验证：自动航点模式下机器人从 `x=0.02 m` 走到 `x=2.17 m`，全程持续绕障重规划；
   RViz 手动点目标模式已验证可正常导航避障。
-- 单次 MPC 求解耗时约 0.2–2.2 s（与机器负载相关），高于配置的 `replan_period=0.1 s`，
+- 单次模型预测控制求解耗时约 0.2–2.2 s（与机器负载相关），高于配置的 `replan_period=0.1 s`，
   实际重规划频率约 1–1.5 Hz。
 - 尚未建立量化指标工具与自动化回归：单元测试已注册但需手动运行
   （`colcon test --packages-select dynacbf_planner && colcon test-result --verbose`）。
